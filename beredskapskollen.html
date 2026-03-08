@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beredskapskollen – Beredskapssimulering för hushåll</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* MCF/Riksdag blå palett */
+  --blue-dark:  #003057;   /* MCF marinblå — primär */
+  --blue:       #005B99;   /* kungsblå — knappar, accent */
+  --blue-light: #EAF2F8;   /* ljusblå — bakgrunder */
+  --blue-mid:   #D0E4F0;   /* mellanton — borders, hover */
+
+  /* Neutraler */
+  --bg:    #F5F7F9;
+  --paper: #FFFFFF;
+  --ink:   #1A2733;
+  --dim:   #4A5C6B;
+  --muted: #8A9BAA;
+  --border:#C8D6E0;
+  --border-strong: #8A9BAA;
+
+  /* Statussignaler — WCAG-godkända */
+  --red:      #B22222;
+  --red-bg:   #FDF3F3;
+  --red-border: #E8BBBB;
+  --amber:    #7A5500;
+  --amber-bg: #FDF8EE;
+  --amber-border: #E8D8A0;
+  --green:    #1A6B3A;
+  --green-bg: #F0F9F4;
+  --green-border: #A8D8BC;
+
+  /* Typsnitt — Source Serif / Source Sans (Google-tillgängliga liknande alternativ till Palatino/Arial) */
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans:  'Source Sans 3', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100svh;
+  overflow-x: hidden;
+}
+
+.screen { display: none; min-height: 100svh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ═══ SIDHUVUD — myndighetsstil ═══ */
+.gov-header {
+  background: var(--blue-dark);
+  color: #fff;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+  gap: 16px;
+}
+.gov-logotype {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .02em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.gov-logotype span { font-weight: 400; opacity: .65; }
+.gov-divider { width: 1px; height: 22px; background: rgba(255,255,255,.25); }
+.gov-sub { font-size: 12px; color: rgba(255,255,255,.65); font-weight: 400; }
+
+/* ═══ TITELSIDA ═══ */
+#s-title { align-items: center; background: var(--paper); }
+.title-header { width: 100%; background: var(--blue-dark); color: #fff; text-align: center; padding: 56px 24px 48px; }
+.th-eyebrow { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 16px; }
+.th-h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(36px,8vw,64px); line-height: 1.1; letter-spacing: -.01em; color: #fff; margin-bottom: 14px; }
+.th-lead { font-family: var(--sans); font-size: clamp(15px,2vw,18px); color: rgba(255,255,255,.75); max-width: 520px; margin: 0 auto; line-height: 1.6; font-weight: 400; }
+
+.title-body { max-width: 640px; width: 100%; padding: 40px 24px 56px; display: flex; flex-direction: column; align-items: center; gap: 28px; }
+
+.premise-box { width: 100%; border: 1px solid var(--border); background: var(--paper); }
+.pb-head { background: var(--blue-dark); color: #fff; padding: 10px 20px; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.pb-row { display: flex; align-items: baseline; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--dim); line-height: 1.5; }
+.pb-row:last-child { border: none; }
+.pb-h { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--blue-dark); width: 40px; flex-shrink: 0; }
+.pb-src { font-size: 11px; color: var(--muted); margin-left: 6px; font-style: italic; }
+
+.src-note { font-size: 13px; color: var(--dim); max-width: 480px; line-height: 1.7; text-align: center; font-family: var(--sans); }
+.btn-go {
+  background: var(--blue); color: #fff; border: none;
+  padding: 14px 48px; font-family: var(--sans); font-size: 16px; font-weight: 600;
+  cursor: pointer; letter-spacing: .02em; transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-go:hover { background: var(--blue-dark); }
+
+/* ═══ SIMULERING ═══ */
+#s-sim { flex-direction: row; }
+
+.chat-col { flex: 1; background: var(--paper); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 100svh; }
+.chat-top { padding: 0 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; height: 52px; background: var(--paper); }
+.chat-logo { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--blue-dark); letter-spacing: .04em; text-transform: uppercase; }
+.prog-row { display: flex; align-items: center; gap: 10px; }
+.prog-track { width: 100px; height: 3px; background: var(--border); border-radius: 2px; }
+.prog-fill { height: 100%; background: var(--blue); transition: width .6s cubic-bezier(.16,1,.3,1); width: 0%; border-radius: 2px; }
+.prog-lbl { font-size: 11px; color: var(--muted); font-family: var(--sans); }
+
+.messages { flex: 1; overflow-y: auto; padding: 24px 20px 0; display: flex; flex-direction: column; gap: 16px; }
+
+.msg { display: flex; gap: 10px; animation: msgIn .3s ease-out; }
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+.av.sys { background: var(--blue-dark); }
+.av.usr { background: var(--blue-light); border: 1px solid var(--blue-mid); }
+.bubble { padding: 12px 16px; font-family: var(--sans); font-size: 14px; line-height: 1.65; flex: 1; border-radius: 2px; }
+.bubble.sys { background: var(--blue-dark); color: #fff; border-radius: 2px 8px 8px 8px; }
+.bubble.usr { background: var(--blue-light); color: var(--dim); border: 1px solid var(--blue-mid); border-radius: 8px 2px 8px 8px; flex: none; max-width: 80%; }
+.bubble strong { font-weight: 600; }
+.fact-tag { display: inline-block; margin-top: 8px; padding: 3px 8px; background: rgba(255,255,255,.12); font-family: var(--sans); font-size: 10px; color: rgba(255,255,255,.55); border-radius: 2px; }
+
+/* ── FAIL-KORT ── */
+.fail-card { border-left: 4px solid var(--red); border-top: 1px solid var(--red-border); border-right: 1px solid var(--red-border); border-bottom: 1px solid var(--red-border); background: var(--red-bg); padding: 18px 20px; margin: 4px 0; animation: msgIn .4s ease-out; }
+.fail-hour { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--red); text-transform: uppercase; margin-bottom: 4px; }
+.fail-title { font-family: var(--serif); font-size: 19px; font-weight: 600; color: var(--red); line-height: 1.2; margin-bottom: 8px; }
+.fail-why { font-family: var(--sans); font-size: 13px; color: var(--dim); line-height: 1.65; }
+
+/* ── UPPDRAG ── */
+.mission-card { background: var(--paper); border: 1px solid var(--border); margin-bottom: 14px; overflow: hidden; border-radius: 2px; }
+.mc-header { background: var(--blue-dark); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+.mc-header-icon { font-size: 17px; }
+.mc-header-text { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: rgba(255,255,255,.7); text-transform: uppercase; }
+.mc-header-time { margin-left: auto; font-family: var(--sans); font-size: 11px; color: rgba(255,255,255,.45); }
+.mc-body { padding: 16px 18px; }
+.mc-title { font-family: var(--serif); font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 10px; line-height: 1.3; }
+.mc-steps { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.mc-step { display: flex; gap: 12px; align-items: baseline; font-size: 13px; color: var(--dim); line-height: 1.55; font-family: var(--sans); }
+.mc-step-n { font-family: var(--sans); font-size: 11px; font-weight: 700; color: var(--blue); background: var(--blue-light); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; padding-top: 1px; }
+.mc-src { font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 10px; font-style: italic; }
+
+.mission-btns { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 18px 16px; }
+.btn-done {
+  background: var(--green); color: #fff; border: none;
+  padding: 11px 20px; font-family: var(--sans); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: background .15s; flex: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-done:hover { background: #145A30; }
+.btn-skip {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); padding: 11px 16px;
+  font-family: var(--sans); font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; cursor: pointer; text-transform: uppercase;
+  transition: all .15s; -webkit-tap-highlight-color: transparent;
+}
+.btn-skip:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── UPPDRAG KLART ── */
+.mission-done { border-left: 4px solid var(--green); border-top: 1px solid var(--green-border); border-right: 1px solid var(--green-border); border-bottom: 1px solid var(--green-border); background: var(--green-bg); padding: 14px 18px; margin: 4px 0; animation: msgIn .35s ease-out; display: flex; align-items: center; gap: 12px; }
+.md-check { font-size: 22px; color: var(--green); }
+.md-text { font-family: var(--sans); font-size: 14px; color: var(--green); font-weight: 600; }
+.md-sub { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+/* ── KLART-KORT ── */
+.success-card { border-left: 4px solid var(--green); border-top: 1px solid var(--green-border); border-right: 1px solid var(--green-border); border-bottom: 1px solid var(--green-border); background: var(--green-bg); padding: 20px 22px; margin: 4px 0; animation: msgIn .4s ease-out; }
+.sc-hour { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--green); text-transform: uppercase; margin-bottom: 4px; }
+.sc-title { font-family: var(--serif); font-size: 19px; font-weight: 600; color: var(--green); line-height: 1.2; margin-bottom: 8px; }
+.sc-body { font-family: var(--sans); font-size: 13px; color: var(--dim); line-height: 1.65; margin-bottom: 16px; }
+
+
+.btn-report { background: var(--blue-dark); color: #fff; border: none; padding: 11px 24px; font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; -webkit-tap-highlight-color: transparent; }
+.btn-report:hover { background: var(--blue); }
+
+/* Typindikator */
+.typing-wrap { display: flex; gap: 4px; padding: 10px 14px; background: var(--blue-dark); border-radius: 2px 8px 8px 8px; width: fit-content; }
+.dot { width: 5px; height: 5px; background: rgba(255,255,255,.35); border-radius: 50%; animation: db 1.2s ease-in-out infinite; }
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes db { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+/* Svarsyta */
+.input-area { padding: 12px 20px 16px; border-top: 1px solid var(--border); background: var(--paper); flex-shrink: 0; }
+.choices { display: flex; flex-direction: column; gap: 6px; }
+.choice {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; background: var(--paper); border: 1px solid var(--border);
+  cursor: pointer; font-family: var(--sans); font-size: 14px; color: var(--ink);
+  text-align: left; line-height: 1.4; transition: all .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.choice:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark); }
+.choice:active { background: var(--blue-dark); color: #fff; }
+.c-key { font-family: var(--sans); font-size: 10px; font-weight: 600; padding: 2px 7px; border: 1px solid var(--border); color: var(--muted); flex-shrink: 0; background: var(--bg); }
+.c-badge { margin-left: auto; font-family: var(--sans); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.c-ok { color: var(--green); } .c-bad { color: var(--red); } .c-warn { color: var(--amber); }
+
+.stepper-row { display: flex; gap: 10px; align-items: center; }
+.stepper { display: flex; border: 1px solid var(--border); }
+.s-btn { width: 40px; height: 40px; background: var(--bg); border: none; cursor: pointer; font-size: 20px; color: var(--ink); transition: all .12s; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.s-btn:hover { background: var(--blue-dark); color: #fff; }
+.s-val { width: 52px; height: 40px; background: var(--paper); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 22px; font-weight: 600; color: var(--blue-dark); }
+.s-confirm { background: var(--blue-dark); color: #fff; border: none; padding: 10px 22px; font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+.s-confirm:hover { background: var(--blue); }
+
+/* Tidslinje (höger panel) */
+.tl-col { width: 280px; flex-shrink: 0; background: var(--blue-light); border-left: 1px solid var(--blue-mid); display: flex; flex-direction: column; position: sticky; top: 0; height: 100svh; overflow: hidden; }
+@media (max-width: 740px) {
+  #s-sim { flex-direction: column; }
+  .tl-col { display: none; }
+  .chat-col { min-height: 100svh; }
+  .mob-status { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--blue-dark); color: rgba(255,255,255,.7); font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .04em; flex-shrink: 0; }
+  .mob-clock { color: #fff; font-size: 13px; font-weight: 700; margin-left: auto; }
+}
+@media (min-width: 741px) {
+  .mob-status { display: none; }
+}
+.tl-top { padding: 14px 16px 12px; border-bottom: 1px solid var(--blue-mid); flex-shrink: 0; background: var(--blue-dark); }
+.tl-lbl { font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .08em; color: rgba(255,255,255,.6); text-transform: uppercase; margin-bottom: 3px; }
+.tl-scenario { font-family: var(--sans); font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.5; }
+
+.timeline { flex: 1; overflow-y: auto; padding: 16px 16px; display: flex; flex-direction: column; gap: 0; }
+.tl-item { display: flex; gap: 12px; padding-bottom: 18px; position: relative; transition: opacity .4s; }
+.tl-item:not(:last-child)::before { content: ''; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--blue-mid); transition: background .4s; }
+.tl-item.future { opacity: .3; }
+.tl-item.active { opacity: 1; }
+.tl-item.passed { opacity: 1; }
+.tl-item.passed::before { background: var(--green); }
+.tl-item.failed { opacity: 1; }
+.tl-item.failed::before { background: var(--red); }
+.tl-item.fixed { opacity: 1; }
+.tl-item.fixed::before { background: var(--green); }
+
+.tl-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--blue-mid); background: var(--paper); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; position: relative; z-index: 1; transition: all .4s; }
+.tl-item.active .tl-dot { border-color: var(--blue-dark); background: var(--paper); box-shadow: 0 0 0 3px rgba(0,48,87,.12); }
+.tl-item.passed .tl-dot { background: var(--green-bg); border-color: var(--green); }
+.tl-item.failed .tl-dot { background: var(--red-bg); border-color: var(--red); }
+.tl-item.fixed .tl-dot { background: var(--green-bg); border-color: var(--green); }
+
+.tl-hour { font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .05em; color: var(--muted); margin-bottom: 1px; text-transform: uppercase; }
+.tl-item.active .tl-hour { color: var(--blue-dark); }
+.tl-item.passed .tl-hour { color: var(--green); }
+.tl-item.failed .tl-hour { color: var(--red); }
+.tl-item.fixed .tl-hour { color: var(--green); }
+.tl-title { font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3; margin-bottom: 2px; }
+.tl-item.failed .tl-title { color: var(--red); }
+.tl-item.fixed .tl-title { color: var(--green); }
+.tl-sub { font-size: 11px; color: var(--muted); line-height: 1.4; transition: color .4s; }
+.tl-item.passed .tl-sub { color: var(--green); }
+.tl-item.fixed .tl-sub { color: var(--green); }
+.tl-item.failed .tl-sub { color: var(--red); }
+
+/* Tidsklocka */
+.clock-wrap { padding: 12px 16px 16px; border-top: 1px solid var(--blue-mid); flex-shrink: 0; background: var(--paper); }
+.clock-lbl { font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.clock-h { font-family: var(--sans); font-size: 38px; font-weight: 600; line-height: 1; color: var(--blue-dark); transition: color .5s; }
+.clock-h.amber { color: var(--amber); }
+.clock-h.red { color: var(--red); }
+.clock-bar { height: 4px; background: var(--border); margin-top: 8px; border-radius: 2px; }
+.clock-fill { height: 100%; background: var(--blue); transition: width .7s cubic-bezier(.16,1,.3,1), background .5s; border-radius: 2px; }
+.clock-ticks { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--muted); font-family: var(--sans); }
+
+/* ═══ RAPPORT ═══ */
+#s-result { background: var(--bg); align-items: center; }
+.res-inner { max-width: 760px; width: 100%; padding: 0 24px 80px; }
+
+.res-govheader { background: var(--blue-dark); color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 14px; margin: 0 -24px 0; width: calc(100% + 48px); margin-bottom: 32px; }
+.rgh-logo { font-family: var(--sans); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.rgh-divider { width: 1px; height: 20px; background: rgba(255,255,255,.3); }
+.rgh-sub { font-size: 12px; color: rgba(255,255,255,.6); }
+
+.res-top { border-bottom: 2px solid var(--blue-dark); padding-bottom: 24px; margin-bottom: 28px; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.res-logo { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.res-h { font-family: var(--sans); font-size: clamp(42px,9vw,76px); font-weight: 600; line-height: .92; color: var(--blue-dark); }
+.res-h .unit { display: block; font-size: .38em; font-weight: 400; color: var(--dim); letter-spacing: 0; margin-top: 6px; }
+.res-badge { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .05em; padding: 5px 12px; border: 1px solid; text-transform: uppercase; flex-shrink: 0; align-self: flex-start; border-radius: 2px; }
+.badge-red { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.badge-amber { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+.badge-green { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+.sec-lbl { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.sec-lbl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.th-list { border: 1px solid var(--border); margin-bottom: 28px; background: var(--paper); }
+.th-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.th-row:last-child { border: none; }
+.th-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+.th-hour { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--muted); width: 40px; flex-shrink: 0; }
+.th-text { font-family: var(--sans); font-size: 14px; color: var(--ink); flex: 1; line-height: 1.4; }
+.th-res { font-family: var(--sans); font-size: 11px; font-weight: 600; padding: 3px 10px; flex-shrink: 0; border-radius: 2px; }
+.th-res.ok { color: var(--green); background: var(--green-bg); }
+.th-res.fixed { color: var(--green); background: var(--green-bg); }
+.th-res.fail { color: var(--red); background: var(--red-bg); }
+.th-res.skip { color: var(--muted); background: var(--bg); }
+
+.share-box { display: flex; align-items: center; gap: 10px; padding: 14px 18px; background: var(--blue-dark); flex-wrap: wrap; margin-bottom: 24px; border-radius: 2px; }
+.share-q { font-family: var(--sans); font-size: 13px; color: rgba(255,255,255,.6); flex: 1; min-width: 180px; }
+.btn-copy { background: var(--blue); color: #fff; border: none; padding: 9px 20px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+.btn-copy:hover { background: #004880; }
+.btn-ghost { background: transparent; color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.2); padding: 9px 16px; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .04em; cursor: pointer; text-transform: uppercase; white-space: nowrap; transition: all .15s; }
+.btn-ghost:hover { color: rgba(255,255,255,.75); border-color: rgba(255,255,255,.4); }
+
+.footer-src { font-size: 11px; color: var(--muted); line-height: 1.8; border: 1px solid var(--border); padding: 14px 16px; background: var(--paper); margin-bottom: 28px; }
+.footer-src strong { color: var(--dim); font-weight: 600; }
+
+/* Resurser */
+.resources-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 30px; }
+@media (max-width: 580px) { .resources-grid { grid-template-columns: 1fr; } }
+.res-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border: 1px solid var(--border);
+  background: var(--paper); text-decoration: none; color: var(--ink);
+  transition: all .13s; -webkit-tap-highlight-color: transparent; border-radius: 2px;
+}
+.res-card:hover { border-color: var(--blue); background: var(--blue-light); }
+.res-card-info { cursor: default; }
+.res-card-info:hover { border-color: var(--border); background: var(--paper); }
+.rc-icon { font-size: 19px; flex-shrink: 0; margin-top: 1px; }
+.rc-body { flex: 1; }
+.rc-title { font-family: var(--sans); font-size: 14px; font-weight: 600; margin-bottom: 3px; line-height: 1.3; color: var(--blue-dark); }
+.rc-desc { font-size: 12px; color: var(--dim); line-height: 1.5; }
+.rc-desc strong { color: var(--blue-dark); font-weight: 600; }
+.rc-arrow { font-size: 14px; color: var(--muted); flex-shrink: 0; align-self: center; }
+</style>
+</head>
+<body>
+
+<!-- ═══ TITELSIDA ═══ -->
+<div id="s-title" class="screen active">
+  <div class="title-header">
+    <div class="th-eyebrow">Myndigheten för civilt försvar · Beredskapssimulering för hushåll</div>
+    <div class="th-h1">Beredskapskollen</div>
+    <p class="th-lead">En 72-timmars kris drabbar Sverige. Hur länge klarar sig ditt hushåll utan samhällets stöd?</p>
+  </div>
+
+  <div class="title-body">
+    <div class="premise-box">
+      <div class="pb-head">Tre kritiska trösklar – baserade på MCF:s planeringsunderlag</div>
+      <div class="pb-row">
+        <div class="pb-h">24 h</div>
+        <div>Kranvattnet kan bli otjänligt vid elbortfall.<span class="pb-src"> Livsmedelsverket (2020)</span></div>
+      </div>
+      <div class="pb-row">
+        <div class="pb-h">48 h</div>
+        <div>Matförrådet tömt. Mobilnätet överbelastat.<span class="pb-src"> MCF: Hushållsberedskap</span></div>
+      </div>
+      <div class="pb-row">
+        <div class="pb-h">72 h</div>
+        <div>Mediciner och uppvärmning kritiska.<span class="pb-src"> Läkemedelsverket</span></div>
+      </div>
+    </div>
+
+    <p class="src-note">
+      Simuleringen stannar vid den första tröskel ni inte klarar.<br>
+      Ni får ett konkret åtgärdsuppdrag och kan sedan fortsätta.
+    </p>
+
+    <button class="btn-go" onclick="goSim()">Starta simuleringen →</button>
+  </div>
+</div>
+
+<!-- ═══ SIMULERING ═══ -->
+<div id="s-sim" class="screen">
+  <div class="chat-col">
+    <div class="chat-top">
+      <div class="chat-logo">Beredskapskollen</div>
+      <div class="prog-row">
+        <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-lbl" id="prog-lbl">Fråga 1</div>
+      </div>
+    </div>
+    <div class="mob-status" id="mob-status">
+      <span id="mob-scenario">Elbortfall · störningar i vattenförsörjning</span>
+      <span class="mob-clock" id="mob-clock">0 h</span>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area" id="input-area"></div>
+  </div>
+
+  <div class="tl-col">
+    <div class="tl-top">
+      <div class="tl-lbl">Händelseförlopp</div>
+      <div class="tl-scenario">Elbortfall och störningar i vattenförsörjning. Baserat på MCF:s planeringsunderlag.</div>
+    </div>
+    <div class="timeline" id="timeline"></div>
+    <div class="clock-wrap">
+      <div class="clock-lbl">Tid i simuleringen</div>
+      <div class="clock-h" id="clock">0 h</div>
+      <div class="clock-bar"><div class="clock-fill" id="clock-fill" style="width:0%"></div></div>
+      <div class="clock-ticks"><span>0 h</span><span>24 h</span><span>48 h</span><span>72 h</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RAPPORT ═══ -->
+<div id="s-result" class="screen">
+  <div class="res-inner">
+    <div class="res-govheader">
+      <div class="rgh-logo">Beredskapskollen</div>
+      <div class="rgh-divider"></div>
+      <div class="rgh-sub">Beredskapsrapport för hushåll</div>
+    </div>
+    <div class="res-top">
+      <div>
+        <div class="res-logo">Beredskapskollen · Beredskapssimulering</div>
+        <div class="res-h">
+          <span id="r-hours" style="transition:color .5s">–</span>
+          <span class="unit">timmar beredskap</span>
+        </div>
+      </div>
+      <div class="res-badge" id="r-badge"></div>
+    </div>
+
+    <div class="sec-lbl">Hur ditt hushåll klarade varje tröskel</div>
+    <div class="th-list" id="r-thresholds"></div>
+
+    <div class="share-box">
+      <div class="share-q" id="r-quote"></div>
+      <button class="btn-copy" onclick="copyResult()">📋 Kopiera</button>
+      <button class="btn-ghost" onclick="location.reload()">Börja om</button>
+    </div>
+
+    <div class="sec-lbl">Viktiga resurser</div>
+    <div class="resources-grid" id="r-resources">
+      <a class="res-card" href="https://www.krisinformation.se" target="_blank" rel="noopener">
+        <div class="rc-icon">🚨</div>
+        <div class="rc-body">
+          <div class="rc-title">krisinformation.se</div>
+          <div class="rc-desc">Myndigheternas samlade krisinformation — den officiella källan under en kris</div>
+        </div>
+        <div class="rc-arrow">→</div>
+      </a>
+      <a class="res-card" href="https://www.mcf.se/sv/rad-till-privatpersoner/" target="_blank" rel="noopener">
+        <div class="rc-icon">🛡</div>
+        <div class="rc-body">
+          <div class="rc-title">MCF: Råd till privatpersoner</div>
+          <div class="rc-desc">Myndigheten för civilt försvars kompletta hushållsberedskapsguide</div>
+        </div>
+        <div class="rc-arrow">→</div>
+      </a>
+      <a class="res-card" href="https://www.1177.se" target="_blank" rel="noopener">
+        <div class="rc-icon">🏥</div>
+        <div class="rc-body">
+          <div class="rc-title">1177 Vårdguiden</div>
+          <div class="rc-desc">Ring 1177 för icke-akuta medicinska frågor. Aldrig 112 — det är bara vid pågående nödsituation</div>
+        </div>
+        <div class="rc-arrow">→</div>
+      </a>
+      <div class="res-card res-card-info">
+        <div class="rc-icon">📞</div>
+        <div class="rc-body">
+          <div class="rc-title">113 13 — krisinformation</div>
+          <div class="rc-desc"><strong>113 13</strong> når du för råd och information under en kris. <strong>112</strong> är bara för pågående nödsituationer där liv riskeras just nu</div>
+        </div>
+      </div>
+      <a class="res-card" href="https://gis.msb.se/skyddsrum/" target="_blank" rel="noopener">
+        <div class="rc-icon">🏛</div>
+        <div class="rc-body">
+          <div class="rc-title">Hitta närmaste skyddsrum</div>
+          <div class="rc-desc">MCF:s karttjänst visar alla registrerade skyddsrum i Sverige. Sök på din adress och notera det närmaste — innan du behöver det</div>
+        </div>
+        <div class="rc-arrow">→</div>
+      </a>
+      <a class="res-card" href="https://www.mcf.se/sv/rad-till-privatpersoner/om-krisen-eller-kriget-kommer/" target="_blank" rel="noopener">
+        <div class="rc-icon">📖</div>
+        <div class="rc-body">
+          <div class="rc-title">Om krisen eller kriget kommer</div>
+          <div class="rc-desc">MCF:s broschyr som går djupare — höjd beredskap, utrymning, totalförsvar</div>
+        </div>
+        <div class="rc-arrow">→</div>
+      </a>
+    </div>
+
+    <div class="footer-src">
+      <strong>Källor och metod:</strong> MCF: Hushållsberedskap,
+      Livsmedelsverkets rapport "Livsmedelsförsörjning vid kris" (2020),
+      Läkemedelsverkets riktlinjer för läkemedelsförvaring vid kris.
+      Simuleringen stannar vid den första tröskel hushållet inte klarar — och ger ett konkret uppdrag.
+      Pedagogiskt verktyg som inte ersätter officiell rådgivning från MCF.
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// THRESHOLDS
+// ══════════════════════════════════════════
+const TH = [
+  {
+    id: 'vatten', hour: 24, icon: '💧',
+    tlTitle: 'Vattnet',
+    tlSub: 'Kranvattnet kan bli otjänligt',
+    passIf: v => v >= 2,
+    passMsg: 'Ert vattenförråd räcker.',
+    failWhy: 'Pumpar kräver el. Vid elbortfall kan kranvattnet bli otjänligt inom ett dygn. Utan eget vattenförråd är ni beroende av att myndigheterna hinner med tankbilar — och de kan vara timmar bort.',
+    mission: {
+      icon: '💧',
+      title: 'Fyll ett vattenförråd hemma',
+      time: '10–15 min',
+      steps: [
+        'Räkna ut hur mycket: ' + '{{waterCalc}}',
+        'Fyll rena dunkar eller PET-flaskor med kranvatten — kommunalt kranvatten håller sig i månader om det förvaras svalt och mörkt',
+        'Fyll inte flaskorna ända upp om du fryser dem — vatten expanderar och spricker förpackningen',
+        '{{barnWaterNote}}',
+        '{{husdjurWaterNote}}',
+        'Fyll gärna badkaret direkt om du hör om störningar — det ger 200–300 liter i reserv',
+      ],
+      src: 'MCF (f.d. MSB): Tillgång till vatten i kris · Livsmedelsverket: Hemberedskap',
+      doneMsg: 'Vattenförrådet är på plats.',
+      doneSub: 'Ni klarar nu tröskeln vid timme 24.',
+    },
+  },
+  {
+    id: 'mat', hour: 48, icon: '🥫',
+    tlTitle: 'Maten',
+    tlSub: 'Matförrådet tömt för genomsnittshushållet',
+    passIf: v => v >= 2,
+    passMsg: 'Ni har mat för minst 3 dagar.',
+    failWhy: 'MCF konstaterar att de flesta hushåll handlar för 2–3 dagar åt gången. Affärer töms snabbt vid kris. Utan eget förråd är ni beroende av en distributionskedja som kanske inte fungerar.',
+    mission: {
+      icon: '🥫',
+      title: 'Handla ett krisskafferi',
+      time: '30–40 min',
+      steps: [
+        'Räkna ut mängd: ' + '{{persons}}' + ' person{{personerSuffix}} × 7 dagar{{barnFoodNote}}',
+        'Prioritera: konserver (bönor, tonfisk, soppa), torkad pasta och ris, havregryn, jordnötssmör',
+        'Tänk på att kunna äta utan el — konserver kan ätas kalla',
+        '{{husdjurFoodNote}}',
+        'Förvara svalt och mörkt, märk med inköpsdatum',
+      ],
+      src: 'MCF: Hushållsberedskap · kap. 3',
+      doneMsg: 'Matförrådet är på plats.',
+      doneSub: 'Ni klarar nu tröskeln vid timme 48.',
+    },
+  },
+  {
+    id: 'radio', hour: 48, icon: '📻',
+    tlTitle: 'Informationen',
+    tlSub: 'Mobilnät överbelastat, sociala medier ner',
+    passIf: v => v >= 1,
+    passMsg: 'Ni kan ta emot officiell krisinformation.',
+    failWhy: 'Vid storskalig kris överbelastas mobilnät snabbt. SR P4 sänder utan avbrott via FM och är den officiella kriskanalen. Utan batteriradio är ni avskurna från myndighetsinformation.',
+    mission: {
+      icon: '📻',
+      title: 'Köp en batteriradio',
+      time: '15 min (eller beställ online)',
+      steps: [
+        'En enkel batteriradio med FM kostar 200–400 kr och finns i de flesta elektronikbutiker',
+        'Köp ett extra set batterier och förvara dem med radion',
+        'Testa att du hittar SR P4 — det är den officiella kriskanalen',
+        'Spara numret 113 13 i mobilen — dit ringer du för krisinformation (inte 112)',
+      ],
+      src: 'MCF: Krisinformation.se · Post- och telestyrelsen (PTS)',
+      doneMsg: 'Batteriradion är på plats.',
+      doneSub: 'Ni kan nu ta emot SR P4 utan el eller internet.',
+    },
+  },
+  {
+    id: 'medicin', hour: 72, icon: '💊',
+    tlTitle: 'Medicinerna',
+    tlSub: 'Apotek och sjukvård svårtillgängliga',
+    passIf: v => v >= 2,
+    passMsg: 'Ni har mediciner för 2+ veckor.',
+    failWhy: 'Transport och logistik är störd. Läkemedelsverket rekommenderar att alltid ha minst 2 veckors recept hemma. Apotek kan vara stängda eller ha tomt lager.',
+    mission: {
+      icon: '💊',
+      title: 'Bygg ett medicinlager',
+      time: '20 min + tid hos apoteket',
+      steps: [
+        'Kontrollera alla recept i hushållet — be din läkare om 3-månaders recept om möjligt',
+        'Hämta ut så att ni alltid har minst 2 veckor framåt på lager',
+        'Sätt ihop en förbandslåda: plåster i olika storlekar, gasbinda, antiseptisk kräm, paracetamol',
+        'Spara numret 1177 — dit ringer du för icke-akuta medicinska frågor',
+      ],
+      src: 'Läkemedelsverket: Läkemedelsförvaring vid kris · 1177 Vårdguiden',
+      doneMsg: 'Medicinlagret är på plats.',
+      doneSub: 'Ni har nu 2+ veckors mediciner och en förbandslåda.',
+    },
+  },
+  {
+    id: 'varme', hour: 72, icon: '🥶',
+    tlTitle: 'Värmen',
+    tlSub: 'Fjärrvärme och elvärme slås ut',
+    passIf: v => v >= 1,
+    passMsg: 'Ni har alternativ värmekälla.',
+    failWhy: 'Fjärrvärme och elvärme kräver el. Vintertid kan en bostad bli farligt kall inom ett dygn utan åtgärder. Kommunen öppnar värmepunkter, men de kan vara fulla.',
+    mission: {
+      icon: '🧥',
+      title: 'Förbered hushållet för kyla',
+      time: '20–30 min',
+      steps: [
+        'Ta fram sovsäckar och extra filtar — en per person',
+        'Köp woolpower-underkläder eller tjocka ullsockor om ni saknar det',
+        'Bestäm vilket rum ni ska samlas i — ett litet rum värms snabbt av kroppsvärme (80W per person)',
+        'Om ni har kamin: kontrollera att ved och tändmaterial finns hemma',
+      ],
+      src: 'MCF: Hushållsberedskap · Folkhälsomyndigheten: Kyla inomhus',
+      doneMsg: 'Ni är förberedda för kyla.',
+      doneSub: 'Sovsäckar och plan för uppvärmning på plats.',
+    },
+  },
+];
+
+// ══════════════════════════════════════════
+// QUESTIONS
+// ══════════════════════════════════════════
+const QUESTIONS = [
+  {
+    id: 'adults', thId: null, type: 'number', min: 1, max: 8, default: 2,
+    sys: 'Välkommen till Beredskapskollen – en beredskapssimulering baserad på Myndigheten för civilt försvars (MCF) riktlinjer för hushållsberedskap.\n\nSimuleringen stannar vid den första tröskel ni inte klarar och ger er ett konkret åtgärdsuppdrag. Ni kan sedan fortsätta därifrån.\n\n<strong>Hur många vuxna (13 år eller äldre) bor i hushållet?</strong>',
+    userFormat: n => n + (n > 1 ? ' vuxna' : ' vuxen') + ' i hushållet.',
+  },
+  {
+    id: 'barn', thId: null, type: 'number', min: 0, max: 6, default: 0,
+    sys: '<strong>Hur många barn under 13 år bor i hushållet?</strong>\n\nBarn räknas separat eftersom de behöver extra vätska och anpassad mat. Svaret påverkar vattenberäkningen och ger specifika råd i åtgärdsuppdragen.',
+    userFormat: n => n === 0 ? 'Inga barn under 13 år.' : n + ' barn under 13 år.',
+  },
+  {
+    id: 'husdjur', thId: null, type: 'choice',
+    sys: '<strong>Finns det husdjur i hushållet?</strong>\n\nSvaret påverkar mat- och vattenuppdragen — husdjur behöver egna förråd och glöms ofta bort i beredskapsplaner. En medelstor hund behöver ca 0,5 liter vatten per dag.',
+    choices: [
+      { text: 'Nej', badge: '', cls: 'c-ok', val: 0, ut: 'Inga husdjur i hushållet.' },
+      { text: 'Ja — hund eller katt', badge: '', cls: 'c-ok', val: 1, ut: 'Hund eller katt i hushållet.' },
+      { text: 'Ja — annat husdjur', badge: '', cls: 'c-ok', val: 2, ut: 'Annat husdjur i hushållet.' },
+    ],
+    fact: 'Jordbruksverket: Ha mat, vatten och eventuella mediciner för husdjuret i minst 72 timmar.',
+  },
+  {
+    id: 'vatten', thId: 'vatten', type: 'choice',
+    sys: '<strong>Timme 24 — pumpar kräver el.</strong>\n\nKranvattnet kan bli otjänligt. Livsmedelsverket rekommenderar <strong>3 liter per person och dag</strong> i reserv.\n\nHur mycket dricksvatten har ni förberett?',
+    choices: [
+      { text: 'Inget — vi dricker kranvatten', badge: '✗', cls: 'c-bad', val: 0, ut: 'Inget vattenförråd hemma.' },
+      { text: '1–3 liter i en flaska eller karaff', badge: '✗', cls: 'c-bad', val: 1, ut: 'Bara 1–3 liter hemma.' },
+      { text: 'Dunkar eller flaskor för några dagar', badge: '✓', cls: 'c-ok', val: 2, ut: 'Dunkar med vatten för några dagar hemma.' },
+      { text: 'Ordentligt förråd — dunkar + PET-flaskor i frysen', badge: '✓', cls: 'c-ok', val: 3, ut: 'Ordentligt vattenförråd med dunkar och frysta flaskor.' },
+    ],
+    fact: 'MCF: Fyll dunkar med kommunalt kranvatten — håller månader om det förvaras svalt och mörkt. Fyll badkaret direkt vid vattenlarm.',
+  },
+  {
+    id: 'mat', thId: 'mat', type: 'choice',
+    sys: '<strong>Timme 48 — matförrådet.</strong>\n\nMCF konstaterar att genomsnittshushållet handlar för 2–3 dagar åt gången. Affärer töms snabbt vid kris.\n\nHur länge räcker ert matförråd?',
+    choices: [
+      { text: 'Knappt ett dygn — vi handlar ofta', badge: '✗', cls: 'c-bad', val: 0, ut: 'Mat för knappt ett dygn hemma.' },
+      { text: '1–2 dagar med det vi har', badge: '✗', cls: 'c-bad', val: 1, ut: 'Mat för 1–2 dagar hemma.' },
+      { text: '3–5 dagar — ganska bra förråd', badge: '✓', cls: 'c-ok', val: 2, ut: 'Mat för 3–5 dagar hemma.' },
+      { text: 'En vecka eller mer', badge: '✓', cls: 'c-ok', val: 3, ut: 'Matförråd för en vecka eller mer.' },
+    ],
+    fact: 'MCF: Konserver, torkad pasta och havregryn. Hög kaloridensitet och lång hållbarhet.',
+  },
+  {
+    id: 'radio', thId: 'radio', type: 'choice',
+    sys: '<strong>Timme 48 — mobilnätet.</strong>\n\nVid storskalig kris överbelastas mobilnät snabbt. SR P4 är den officiella kriskanalen och sänder utan avbrott via FM.\n\nHur tar ni emot officiell information utan internet?',
+    choices: [
+      { text: 'Bara via mobil — vi har ingen radio', badge: '✗', cls: 'c-bad', val: 0, ut: 'Vi har ingen batteriradio.' },
+      { text: 'Vi har en batteriradio hemma', badge: '✓', cls: 'c-ok', val: 1, ut: 'Vi har en batteriradio hemma.' },
+      { text: 'Vevradio eller solcellsradio', badge: '✓', cls: 'c-ok', val: 2, ut: 'Vi har vevradio — batterifri.' },
+    ],
+    fact: 'Ring 113 13 (inte 112) för krisinformation. 112 är bara vid pågående nödsituation.',
+  },
+  {
+    id: 'medicin', thId: 'medicin', type: 'choice',
+    sys: '<strong>Timme 72 — apotek och sjukvård.</strong>\n\nTransport och logistik störd. Läkemedelsverket rekommenderar alltid minst 2 veckors mediciner hemma.\n\nHur är ert läge?',
+    choices: [
+      { text: 'Vi hämtar mediciner när vi behöver', badge: '✗', cls: 'c-bad', val: 0, ut: 'Inga mediciner på lager.' },
+      { text: 'Grundläggande plåster och paracetamol', badge: '◐', cls: 'c-warn', val: 1, ut: 'Grundläggande förbandsmaterial.' },
+      { text: 'Förbandslåda + recept för 2+ veckor', badge: '✓', cls: 'c-ok', val: 2, ut: 'Förbandslåda och 2+ veckors mediciner.' },
+      { text: 'Komplett sjukvårdsväska, vi övar', badge: '✓', cls: 'c-ok', val: 3, ut: 'Komplett medicinsk beredskap.' },
+    ],
+    fact: 'Öppnat insulin håller 28 dagar i rumstemperatur. Ring 1177 för icke-akuta medicinska frågor.',
+  },
+  {
+    id: 'varme', thId: 'varme', type: 'choice',
+    sys: '<strong>Timme 72 — uppvärmning.</strong>\n\nFjärrvärme och elvärme kräver el. Vintertid kan en bostad bli farligt kall inom ett dygn utan åtgärder.\n\nHur planerar ni för kyla utan el?',
+    choices: [
+      { text: 'Ingen alternativ värmekälla', badge: '✗', cls: 'c-bad', val: 0, ut: 'Ingen alternativ uppvärmning.' },
+      { text: 'Varma kläder och sovsäckar', badge: '✓', cls: 'c-ok', val: 1, ut: 'Sovsäckar och varma kläder finns.' },
+      { text: 'Kamin, ved eller pelletsbrännare', badge: '✓', cls: 'c-ok', val: 2, ut: 'Kamin eller annan värmekälla hemma.' },
+    ],
+    fact: 'MCF: Samlas i ett rum — kroppen avger 80 W värme. Kommunen öppnar värmepunkter vid längre avbrott.',
+  },
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let S = {
+  step: 0,
+  answers: {},
+  persons: 2,
+  barn: 0,
+  husdjur: 0,
+  passed: [],
+  fixed: [],
+  skipped: [],
+  currentFail: null,
+};
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.className = 'screen');
+  document.getElementById(id).className = 'screen active';
+}
+
+function goSim() {
+  S = { step: 0, answers: {}, adults: 2, barn: 0, persons: 2, husdjur: 0, passed: [], fixed: [], skipped: [], currentFail: null };
+  show('s-sim');
+  renderTimeline();
+  setTimeout(renderStep, 150);
+}
+
+// ══════════════════════════════════════════
+// TIMELINE
+// ══════════════════════════════════════════
+function renderTimeline() {
+  document.getElementById('timeline').innerHTML = TH.map(th =>
+    '<div class="tl-item future" id="tl-' + th.id + '">' +
+    '<div class="tl-dot">' + th.icon + '</div>' +
+    '<div class="tl-body">' +
+    '<div class="tl-hour">Timme ' + th.hour + '</div>' +
+    '<div class="tl-title">' + th.tlTitle + '</div>' +
+    '<div class="tl-sub">' + th.tlSub + '</div>' +
+    '</div></div>'
+  ).join('');
+}
+
+function setTlState(thId, state, sub) {
+  const el = document.getElementById('tl-' + thId);
+  if (!el) return;
+  el.className = 'tl-item ' + state;
+  if (sub !== undefined) el.querySelector('.tl-sub').textContent = sub;
+}
+
+function advanceClock(h) {
+  const cl = document.getElementById('clock');
+  cl.textContent = h + ' h';
+  cl.className = 'clock-h' + (h >= 72 ? '' : h >= 48 ? ' amber' : '');
+  const fill = document.getElementById('clock-fill');
+  fill.style.width = Math.min(100, (h / 72) * 100) + '%';
+  fill.style.background = h < 48 ? 'var(--blue)' : h < 72 ? 'var(--amber)' : 'var(--green)';
+  const mob = document.getElementById('mob-clock');
+  if (mob) mob.textContent = h + ' h';
+}
+
+// ══════════════════════════════════════════
+// CONVERSATION ENGINE
+// ══════════════════════════════════════════
+function renderStep() {
+  if (S.step >= QUESTIONS.length) { showFinalSuccess(); return; }
+  const q = QUESTIONS[S.step];
+  const pct = (S.step / (QUESTIONS.length - 1)) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-lbl').textContent = 'Fråga ' + (S.step + 1);
+  if (q.thId) setTlState(q.thId, 'active');
+  addTyping(() => { addSys(q.sys); renderInput(q); scrollMsg(); });
+}
+
+function addTyping(done) {
+  const w = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg'; el.id = 'typing-ind';
+  el.innerHTML = '<div class="av sys">🛡</div><div class="typing-wrap"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  w.appendChild(el); scrollMsg();
+  setTimeout(() => { el.remove(); done(); }, 600);
+}
+
+function addSys(html) {
+  const w = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg';
+  el.innerHTML = '<div class="av sys">🛡</div><div class="bubble sys">' + html + '</div>';
+  w.appendChild(el);
+}
+
+function addUsr(text, fact) {
+  const w = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg'; el.style.flexDirection = 'row-reverse';
+  el.innerHTML = '<div class="av usr">👤</div><div class="bubble usr">' + text +
+    (fact ? '<br><span class="fact-tag">💡 ' + fact + '</span>' : '') + '</div>';
+  w.appendChild(el);
+}
+
+function renderInput(q) {
+  const area = document.getElementById('input-area');
+  if (q.type === 'choice') {
+    area.innerHTML = '<div class="choices">' +
+      q.choices.map((c, i) =>
+        '<button class="choice" onclick="answer(' + i + ')">' +
+        '<span class="c-key">' + String.fromCharCode(65 + i) + '</span>' +
+        '<span style="flex:1">' + c.text + '</span>' +
+        '</button>'
+      ).join('') + '</div>';
+  } else {
+    window._nv = q.default != null ? q.default : 2; window._nmin = q.min; window._nmax = q.max;
+    area.innerHTML = '<div class="stepper-row">' +
+      '<div class="stepper">' +
+      '<button class="s-btn" onclick="cn(-1)">−</button>' +
+      '<div class="s-val" id="s-val">' + window._nv + '</div>' +
+      '<button class="s-btn" onclick="cn(1)">+</button>' +
+      '</div>' +
+      '<button class="s-confirm" onclick="confirmN()">Nästa →</button>' +
+      '</div>';
+  }
+}
+
+function cn(d) {
+  window._nv = Math.min(window._nmax, Math.max(window._nmin, window._nv + d));
+  document.getElementById('s-val').textContent = window._nv;
+}
+
+function confirmN() {
+  const q = QUESTIONS[S.step];
+  const val = window._nv;
+  clearInput();
+
+  if (q.id === 'adults') {
+    S.adults = val;
+    S.persons = S.adults + S.barn; // barn may still be 0
+    addUsr(q.userFormat(val));
+  } else if (q.id === 'barn') {
+    S.barn = val;
+    S.persons = S.adults + S.barn;
+    addUsr(q.userFormat(val));
+    // Visa summering om det finns barn
+    if (val > 0) {
+      setTimeout(() => addSys('Totalt ' + S.persons + ' personer i hushållet — ' + S.adults + (S.adults > 1 ? ' vuxna' : ' vuxen') + ' och ' + val + (val > 1 ? ' barn' : ' barn') + '. Vattenberäkningen justeras.'), 300);
+    }
+  } else {
+    S.persons = window._nv;
+    addUsr(q.userFormat(val));
+  }
+
+  S.step++; setTimeout(renderStep, val > 0 && q.id === 'barn' ? 900 : 380); scrollMsg();
+}
+
+function answer(idx) {
+  const q = QUESTIONS[S.step];
+  const c = q.choices[idx];
+  clearInput(); addUsr(c.ut, q.fact);
+
+  // Track special state vars
+  if (q.id === 'husdjur') S.husdjur = c.val;
+
+  if (q.thId) {
+    S.answers[q.thId] = c.val;
+    const th = TH.find(t => t.id === q.thId);
+    const passed = th.passIf(c.val);
+
+    if (passed) {
+      setTlState(q.thId, 'passed', th.passMsg);
+      advanceClock(th.hour);
+      S.passed.push(q.thId);
+      S.step++;
+      setTimeout(renderStep, 500);
+    } else {
+      // Simuleringen stannar — visa fail + uppdrag
+      setTlState(q.thId, 'failed', 'Simuleringen stannar här.');
+      advanceClock(th.hour);
+      S.currentFail = th;
+      setTimeout(() => showMission(th), 600);
+    }
+  } else {
+    // Informationsfråga utan tröskel (t.ex. barn, husdjur) — gå vidare direkt
+    S.step++;
+    setTimeout(renderStep, 400);
+  }
+  scrollMsg();
+}
+
+// ══════════════════════════════════════════
+// MISSION SYSTEM
+// ══════════════════════════════════════════
+function showMission(th) {
+  const w = document.getElementById('messages');
+  const m = th.mission;
+  const liters = (S.persons * 3 + (S.barn > 0 ? S.barn * 1.5 : 0)) * 3;
+  const litersRounded = Math.ceil(liters);
+
+  const waterCalc = S.barn > 0
+    ? S.adults + (S.adults > 1 ? ' vuxna' : ' vuxen') + ' × 3 L + ' + S.barn + (S.barn > 1 ? ' barn' : ' barn') + ' × 1,5 L extra × 3 dagar = ' + litersRounded + ' liter'
+    : S.persons + (S.persons > 1 ? ' personer' : ' person') + ' × 3 liter × 3 dagar = ' + (S.persons * 9) + ' liter';
+
+  const barnWaterNote = S.barn > 0
+    ? 'Barn behöver extra vatten — räkna med ~1,5L extra per barn och dag utöver vuxendosen'
+    : null;
+
+  const husdjurWaterNote = S.husdjur > 0
+    ? 'Glöm inte husdjuret: en medelstor hund behöver ca 0,5L/dag, en katt ca 0,25L/dag'
+    : null;
+
+  const barnFoodNote = S.barn > 0 ? ' + barnmat/välling för ' + S.barn + ' barn' : '';
+  const husdjurFoodNote = S.husdjur > 0
+    ? 'Ha mat och vatten för husdjuret i minst 7 dagar — och eventuella djurmediciner'
+    : null;
+
+  // Build steps, filtering out null placeholders
+  const steps = m.steps
+    .map(s => s
+      .replace('{{waterCalc}}', waterCalc)
+      .replace('{{barnFoodNote}}', barnFoodNote)
+    )
+    .map(s => {
+      if (s === '{{barnWaterNote}}') return barnWaterNote;
+      if (s === '{{husdjurWaterNote}}') return husdjurWaterNote;
+      if (s === '{{husdjurFoodNote}}') return husdjurFoodNote;
+      return s;
+    })
+    .filter(s => s !== null)
+    .map(s => s.replace('{{persons}}', S.persons).replace('{{personerSuffix}}', S.persons > 1 ? 'er' : ''));
+
+  const el = document.createElement('div');
+  el.id = 'mission-card-' + th.id;
+
+  el.innerHTML =
+    '<div class="fail-card" style="margin-bottom:0;border-bottom:none;">' +
+    '<div class="fail-hour">⏹ Simuleringen stannar vid timme ' + th.hour + '</div>' +
+    '<div class="fail-title">Brist: ' + th.tlSub + '</div>' +
+    '<div class="fail-why">' + th.failWhy + '</div>' +
+    '</div>' +
+    '<div class="mission-card">' +
+    '<div class="mc-header">' +
+    '<div class="mc-header-icon">' + m.icon + '</div>' +
+    '<div class="mc-header-text">Ditt uppdrag</div>' +
+    '<div class="mc-header-time">⏱ ' + m.time + '</div>' +
+    '</div>' +
+    '<div class="mc-body">' +
+    '<div class="mc-title">' + m.title + '</div>' +
+    '<div class="mc-steps">' +
+    steps.map((s, i) =>
+      '<div class="mc-step"><div class="mc-step-n">' + (i + 1) + '</div><div>' + s + '</div></div>'
+    ).join('') +
+    '</div>' +
+    '<div class="mc-src">Källa: ' + m.src + '</div>' +
+    '</div>' +
+    '</div>' +
+    '<div class="mission-btns" id="mission-btns-' + th.id + '">' +
+    '<button class="btn-done" onclick="missionDone(\'' + th.id + '\')">Jag har gjort det — fortsätt →</button>' +
+    '<button class="btn-skip" onclick="missionSkip(\'' + th.id + '\')">Hoppa över</button>' +
+    '</div>';
+
+  w.appendChild(el);
+  scrollMsg();
+}
+
+function missionDone(thId) {
+  const th = TH.find(t => t.id === thId);
+
+  // Remove buttons
+  const btns = document.getElementById('mission-btns-' + thId);
+  if (btns) btns.remove();
+
+  // Show confirmation
+  const w = document.getElementById('messages');
+  const done = document.createElement('div');
+  done.className = 'mission-done';
+  done.innerHTML =
+    '<div class="md-check">✓</div>' +
+    '<div><div class="md-text">' + th.mission.doneMsg + '</div>' +
+    '<div class="md-sub">' + th.mission.doneSub + '</div></div>';
+  w.appendChild(done);
+
+  // Update state + timeline
+  S.fixed.push(thId);
+  S.answers[thId] = 99; // override to passing
+  setTlState(thId, 'fixed', th.mission.doneMsg);
+  advanceClock(th.hour);
+
+  // Continue
+  S.step++;
+  S.currentFail = null;
+  setTimeout(renderStep, 700);
+  scrollMsg();
+}
+
+function missionSkip(thId) {
+  const th = TH.find(t => t.id === thId);
+  const btns = document.getElementById('mission-btns-' + thId);
+  if (btns) btns.remove();
+
+  S.skipped.push(thId);
+  S.currentFail = null;
+
+  // Show skip note
+  const w = document.getElementById('messages');
+  const note = document.createElement('div');
+  note.className = 'msg';
+  note.innerHTML = '<div class="av sys">🛡</div><div class="bubble sys" style="opacity:.65;font-size:13px;">Uppdraget hoppat över. Simuleringen fortsätter — men bristen kvarstår i din rapport.</div>';
+  w.appendChild(note);
+
+  S.step++;
+  setTimeout(renderStep, 500);
+  scrollMsg();
+}
+
+// ══════════════════════════════════════════
+// FINAL SUCCESS
+// ══════════════════════════════════════════
+function showFinalSuccess() {
+  const w = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'success-card';
+
+  const allFixed = S.fixed.length > 0 && S.skipped.length === 0;
+  const someFixed = S.fixed.length > 0;
+
+  el.innerHTML =
+    '<div class="sc-hour">✓ Simuleringen avslutad — 72 timmar</div>' +
+    '<div class="sc-title">' + (allFixed ? 'Ni åtgärdade alla luckor under vägen.' : someFixed ? 'Ni åtgärdade ' + S.fixed.length + ' av ' + (S.fixed.length + S.skipped.length) + ' luckor.' : 'Ditt hushåll klarade alla trösklar.') + '</div>' +
+    '<div class="sc-body">' + (S.fixed.length > 0 ? 'Det tar mod att faktiskt göra något åt det man hittar. De uppdrag ni genomförde har gjort hushållet märkbart bättre rustat.' : 'Ni är välförberedda. Bättre rustade än de flesta.') + '</div>' +
+    '<button class="btn-report" onclick="showResult()">Se fullständig rapport →</button>';
+
+  w.appendChild(el);
+  advanceClock(72);
+  TH.forEach(th => {
+    if (!document.getElementById('tl-' + th.id).className.includes('failed') &&
+        !document.getElementById('tl-' + th.id).className.includes('fixed')) {
+      setTlState(th.id, 'passed', th.passMsg);
+    }
+  });
+  scrollMsg();
+  clearInput();
+}
+
+function clearInput() { document.getElementById('input-area').innerHTML = ''; }
+function scrollMsg() { setTimeout(() => { const m = document.getElementById('messages'); if (m) m.scrollTop = m.scrollHeight; }, 80); }
+
+// ══════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════
+function showResult() {
+  show('s-result');
+
+  // Hours: stops at first skipped fail, or 72 if all done/fixed
+  let hours = 72;
+  if (S.skipped.length > 0) {
+    const firstSkip = TH.find(t => S.skipped.includes(t.id));
+    if (firstSkip) hours = firstSkip.hour;
+  }
+
+  const hEl = document.getElementById('r-hours');
+  hEl.textContent = hours;
+  hEl.style.color = hours < 48 ? 'var(--red)' : hours < 72 ? 'var(--amber)' : 'var(--green)';
+
+  let bt, bc;
+  if (hours < 48) { bt = 'Kritisk beredskap'; bc = 'badge-red'; }
+  else if (hours < 72) { bt = 'Delvis förberedd'; bc = 'badge-amber'; }
+  else if (S.fixed.length > 0) { bt = 'Åtgärdat under simuleringen'; bc = 'badge-green'; }
+  else { bt = 'Fullt förberedd'; bc = 'badge-green'; }
+  const badge = document.getElementById('r-badge');
+  badge.textContent = bt; badge.className = 'res-badge ' + bc;
+
+  document.getElementById('r-thresholds').innerHTML = TH.map(th => {
+    const isFixed = S.fixed.includes(th.id);
+    const isSkipped = S.skipped.includes(th.id);
+    const answered = th.id in S.answers;
+    const passed = answered && th.passIf(S.answers[th.id]) && !isFixed;
+    const passedOriginal = answered && th.passIf(S.answers[th.id]) && !isSkipped && !isFixed;
+
+    let resClass, resText;
+    if (isFixed) { resClass = 'fixed'; resText = '✓ Åtgärdat'; }
+    else if (passedOriginal) { resClass = 'ok'; resText = '✓ Klarade'; }
+    else if (isSkipped) { resClass = 'fail'; resText = '✗ Klarade ej'; }
+    else if (!answered) { resClass = 'skip'; resText = '— Ej testat'; }
+    else { resClass = 'fail'; resText = '✗ Klarade ej'; }
+
+    return '<div class="th-row">' +
+      '<div class="th-icon">' + th.icon + '</div>' +
+      '<div class="th-hour">' + th.hour + 'h</div>' +
+      '<div class="th-text">' + th.tlSub + '</div>' +
+      '<div class="th-res ' + resClass + '">' + resText + '</div>' +
+      '</div>';
+  }).join('');
+
+  const shareText = S.skipped.length === 0
+    ? (S.fixed.length > 0
+      ? '"Jag åtgärdade ' + S.fixed.length + ' beredskapsbrister under simuleringen. Hur länge klarar ditt hushåll sig?"'
+      : '"Mitt hushåll klarade alla 72 timmar. Hur länge klarar ditt?"')
+    : '"Simuleringen stannade vid timme ' + hours + '. Hur länge klarar ditt hushåll sig?"';
+  document.getElementById('r-quote').textContent = shareText;
+}
+
+function copyResult() {
+  const h = document.getElementById('r-hours').textContent;
+  const fixed = TH.filter(t => S.fixed.includes(t.id));
+  const skipped = TH.filter(t => S.skipped.includes(t.id));
+  let txt = 'BEREDSKAPSKOLLEN — Beredskapstest\n\n';
+  if (S.fixed.length > 0 && S.skipped.length === 0) {
+    txt += 'Jag åtgärdade ' + fixed.map(t => t.tlTitle.toLowerCase()).join(' och ') + ' under simuleringen och klarade 72 timmar.';
+  } else {
+    txt += 'Mitt hushåll klarar ' + h + ' av 72 timmar.';
+  }
+  if (skipped.length) txt += '\n\nLuckor kvar: ' + skipped.map(t => t.tlSub).join(', ');
+  txt += '\n\nBaserat på MCF:s och Livsmedelsverkets officiella riktlinjer.\nberedskapskollen.se';
+  navigator.clipboard.writeText(txt).then(() => {
+    const b = document.querySelector('.btn-copy');
+    b.textContent = '✓ Kopierat';
+    setTimeout(() => { b.textContent = '📋 Kopiera'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
