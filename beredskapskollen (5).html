@@ -214,11 +214,6 @@ body {
   #s-sim { flex-direction: column; }
   .tl-col { display: none; }
   .chat-col { min-height: 100svh; }
-  .mob-status { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--blue-dark); color: rgba(255,255,255,.7); font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: .04em; flex-shrink: 0; }
-  .mob-clock { color: #fff; font-size: 13px; font-weight: 700; margin-left: auto; }
-}
-@media (min-width: 741px) {
-  .mob-status { display: none; }
 }
 .tl-top { padding: 14px 16px 12px; border-bottom: 1px solid var(--blue-mid); flex-shrink: 0; background: var(--blue-dark); }
 .tl-lbl { font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .08em; color: rgba(255,255,255,.6); text-transform: uppercase; margin-bottom: 3px; }
@@ -340,12 +335,13 @@ body {
   <div class="title-header">
     <div class="th-eyebrow">Myndigheten för civilt försvar · Beredskapssimulering för hushåll</div>
     <div class="th-h1">Beredskapskollen</div>
-    <p class="th-lead">En 72-timmars kris drabbar Sverige. Hur länge klarar sig ditt hushåll utan samhällets stöd?</p>
+    <p class="th-lead">En kris drabbar Sverige. Hur länge klarar sig ditt hushåll utan samhällets stöd?</p>
+    <p style="margin-top:14px;font-family:var(--sans);font-size:13px;color:rgba(255,255,255,.55);max-width:480px;line-height:1.6;">Simuleringen testar de första 72 timmarna — men regeringens rekommendation är <strong style="color:rgba(255,255,255,.8)">en veckas beredskap</strong>. Det är målet att sikta mot.</p>
   </div>
 
   <div class="title-body">
     <div class="premise-box">
-      <div class="pb-head">Tre kritiska trösklar – baserade på MCF:s planeringsunderlag</div>
+      <div class="pb-head">Tio trösklar under 72 timmar — steg ett mot en veckas beredskap</div>
       <div class="pb-row">
         <div class="pb-h">24 h</div>
         <div>Kranvattnet kan bli otjänligt vid elbortfall.<span class="pb-src"> Livsmedelsverket (2020)</span></div>
@@ -357,6 +353,10 @@ body {
       <div class="pb-row">
         <div class="pb-h">72 h</div>
         <div>Mediciner och uppvärmning kritiska.<span class="pb-src"> Läkemedelsverket</span></div>
+      </div>
+      <div class="pb-row" style="background:rgba(0,48,87,.04);border-top:1px solid var(--border);">
+        <div class="pb-h" style="color:var(--blue);">1 v</div>
+        <div style="color:var(--blue-dark);font-weight:600;">Regeringens rekommendation: minst en veckas beredskap för hela hushållet.<span class="pb-src"> MCF: Om krisen eller kriget kommer (2024)</span></div>
       </div>
     </div>
 
@@ -379,10 +379,7 @@ body {
         <div class="prog-lbl" id="prog-lbl">Fråga 1</div>
       </div>
     </div>
-    <div class="mob-status" id="mob-status">
-      <span id="mob-scenario">Elbortfall · störningar i vattenförsörjning</span>
-      <span class="mob-clock" id="mob-clock">0 h</span>
-    </div>
+
     <div class="messages" id="messages"></div>
     <div class="input-area" id="input-area"></div>
   </div>
@@ -423,6 +420,11 @@ body {
 
     <div class="sec-lbl">Hur ditt hushåll klarade varje tröskel</div>
     <div class="th-list" id="r-thresholds"></div>
+
+    <div style="border:1px solid var(--blue-mid);background:var(--blue-light);padding:16px 20px;margin-bottom:24px;border-left:4px solid var(--blue);">
+      <div style="font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">Nästa steg — regeringens rekommendation</div>
+      <div style="font-family:var(--sans);font-size:14px;color:var(--blue-dark);line-height:1.6;">72 timmar är miniminivån. Enligt MCF:s riktlinjer och regeringens direktiv bör varje hushåll vara förberett för <strong>minst en vecka</strong> utan samhällets stöd. Fördubbla ditt vatten- och matförråd som nästa konkreta steg.</div>
+    </div>
 
     <div class="share-box">
       <div class="share-title">Dela ditt resultat</div>
@@ -916,8 +918,6 @@ function advanceClock(h) {
   const fill = document.getElementById('clock-fill');
   fill.style.width = Math.min(100, (h / 72) * 100) + '%';
   fill.style.background = h < 48 ? 'var(--blue)' : h < 72 ? 'var(--amber)' : 'var(--green)';
-  const mob = document.getElementById('mob-clock');
-  if (mob) mob.textContent = h + ' h';
 }
 
 // ══════════════════════════════════════════
